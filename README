@@ -1,0 +1,5 @@
+Postprocessing for detection pipeline using redis geohash
+
+TODO: Resolve nodes not being added to persistent category. Possible causes include too small ageosearch radius, incorrect/buggy conditions for points to graduate from Appearant to Persistent classification, poorly centred spatial aggregations, or discrepancies in the WSG84 projections between individual scenes or months
+
+TODO: Allow get_previous_code() to search back more than one month if an A/P set is missing for a certain month
