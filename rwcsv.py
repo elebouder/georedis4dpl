@@ -1,6 +1,6 @@
 import csv
 import os
-
+import Geohash
 
 class ServeCSV:
     def __init__(self, csvdict, path=None, APpath=None):
@@ -82,15 +82,20 @@ class ServeCSV:
 
         return detectiondict
 
+    def hash2latlon(self, geohash):
+        g = Geohash.decode(geohash)
+        return [float(g[0]), float(g[1])]
 
 
-    def write_APcsv(self, namecode, AorP, data, fieldnames=['geohash', 'N', 'n', 'firstspotted', 'lastspotted']):
+    def write_APcsv(self, namecode, AorP, data, fieldnames=['geohash', 'N', 'n', 'firstspotted', 'lastspotted', 'lat', 'lon']):
         csvout = os.path.join(self.APpath, '{}_{}.csv'.format(namecode, AorP))
         with open(csvout, 'w') as f:
             writer = csv.DictWriter(f, fieldnames)
             writer.writeheader()
             for row in data:
-                writer.writerow({'geohash': row['geohash'], 'N': row['N'], 'n': row['n'], 'firstspotted': row['firstspotted'], 'lastspotted': row['lastspotted']})
+		ghash = row['geohash']
+		lat, lon = self.hash2latlon(ghash)
+                writer.writerow({'geohash': row['geohash'], 'N': row['N'], 'n': row['n'], 'firstspotted': row['firstspotted'], 'lastspotted': row['lastspotted'], 'lat': lat, 'lon': lon})
 
     def get_earlier_code(self, code):
 	if len(code) == 3:

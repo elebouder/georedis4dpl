@@ -150,17 +150,19 @@ class STAggregator:
 
 
     def neighbour_search_backwards(self, key, akey, pkey):
+	print key, akey, pkey
         for elem in self.detectiondict:
             ghash = elem['geohash']
             if self.r.geopos(key, ghash)[0] is not None:
                 [lat, lon] = self.hash2latlon(ghash)
-                phits = self.r.georadius(pkey, lat, lon, 100, unit='m')
+                phits = self.r.georadius(pkey, lon, lat, 100, unit='m')
                 if len(phits) > 0:
                     #update persistent
                     self.persistent.update_collection_found(phits)
                     continue
-                ahits = self.r.georadius(akey, lat, lon, 100, unit='m')
+                ahits = self.r.georadius(akey, lon, lat, 100, unit='m')
                 if len(ahits) > 0:
+		    print ahits
                     self.appearant.update_collection_found(ahits)
                     continue
                 if (len(phits) == 0) and (len(ahits) == 0):
@@ -293,12 +295,11 @@ class Appearant:
 
 
     def init_redis_db(self):
+	print self.key
         for elem in self.detectiondict:
             lat, lon = self.hash2latlon(elem['geohash'])
             self.pipe.geoadd(self.key, lon, lat, elem['geohash'])
-
-
-        self.pipe.execute()
+	self.pipe.execute()
         self.pipe.reset()
 
     def write_detections(self):
@@ -361,15 +362,21 @@ class Appearant:
 
     def post_search_process(self):
         for elem in self.detectiondict:
-            if int(elem['lastspotted']) > 0:
+            if int(elem['lastspotted']) > 5:
+		#print 'c1'
                 self.to_remove.append(elem['geohash'])
             elif int(elem['lastspotted']) == 0 and int(elem['n']) >= 2:
                 ls = int(elem['lastspotted'])
                 elem['lastspotted'] = ls + 1
                 self.topersistent.append(elem)
+		#1print 'c2'
             else:
                 ls = int(elem['lastspotted'])
                 elem['lastspotted'] = ls + 1
+		N = int(elem['N'])
+                elem['N'] = N + 1
+		#print 'c3'
+
         self.move_topersistent()
         self.remove_hashes()
         self.add_hashes()
