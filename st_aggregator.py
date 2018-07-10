@@ -123,13 +123,13 @@ class STAggregator:
     #build a redis index with a key and dictionary of values (can be ori or agg)
     def index_builder(self, key, detectiondict):
         self.r.flushall()
-        self.pipe.reset()
+        """self.pipe.reset()
         for elem in detectiondict:
 	    
             self.pipe.geoadd(key, elem['c_x'], elem['c_y'], elem['geohash'])
 
         self.pipe.execute()
-        self.pipe.reset()
+        self.pipe.reset()"""
 
     
     def redis_up(self):
@@ -150,23 +150,21 @@ class STAggregator:
 
 
     def neighbour_search_backwards(self, key, akey, pkey):
-	print key, akey, pkey
         for elem in self.detectiondict:
             ghash = elem['geohash']
-            if self.r.geopos(key, ghash)[0] is not None:
-                [lat, lon] = self.hash2latlon(ghash)
-                phits = self.r.georadius(pkey, lon, lat, 100, unit='m')
-                if len(phits) > 0:
-                    #update persistent
-                    self.persistent.update_collection_found(phits)
-                    continue
-                ahits = self.r.georadius(akey, lon, lat, 100, unit='m')
-                if len(ahits) > 0:
-		    print ahits
-                    self.appearant.update_collection_found(ahits)
-                    continue
-                if (len(phits) == 0) and (len(ahits) == 0):
-                    self.appearant.queue_add_hash(ghash)
+            lat, lon = self.hash2latlon(ghash)
+            phits = self.r.georadius(pkey, lon, lat, 100, unit='m')
+            if len(phits) > 0:
+                #update persistent
+                self.persistent.update_collection_found(phits)
+                continue
+            ahits = self.r.georadius(akey, lon, lat, 1000, unit='m')
+            if len(ahits) > 0:
+		print ahits
+                self.appearant.update_collection_found(ahits)
+                continue
+            if (len(phits) == 0) and (len(ahits) == 0):
+                self.appearant.queue_add_hash(ghash)
 
 
 
@@ -276,8 +274,9 @@ class Appearant:
     
     def __init__(self, code, csvserver, redisInstance, p):
 	pullcode = csvserver.get_earlier_code(code)
+	print 'pullA', pullcode
         self.detectiondict = csvserver.read_APcsv(pullcode, 'A')
-        self.csvserver = csvserver
+	self.csvserver = csvserver
         self.code = code
         self.r = redisInstance
         self.to_remove = []
@@ -298,9 +297,10 @@ class Appearant:
 	print self.key
         for elem in self.detectiondict:
             lat, lon = self.hash2latlon(elem['geohash'])
-            self.pipe.geoadd(self.key, lon, lat, elem['geohash'])
+            self.pipe.geoadd(self.key, lom, lat, elem['geohash'])
 	self.pipe.execute()
         self.pipe.reset()
+	
 
     def write_detections(self):
         self.csvserver.write_APcsv(self.code, 'A', self.detectiondict)
@@ -432,7 +432,7 @@ class SPT_Collection(object):
 
 
     def init_redis(self):
-        self.pipe = self.r.pipeline()
+        self.pip e = self.r.pipeline()
         self.r.delete(self.code)
 
     def init_redis_db(self):
@@ -466,6 +466,5 @@ class SPT_Collection(object):
 
     def get_key(self):
         return self.key
-
 
 """

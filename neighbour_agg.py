@@ -11,8 +11,8 @@ temp_outfields = ['geohash', 'N', 'n', 'firstspotted', 'lastspotted']
 #will there be inter-month processing?  If true, it assumes that all months that will be processed as such have already been aggregated.
 temporal = True
 #start and end months for spatiotemporal processing.  Will process in step-month timesteps
-temp_start = [3, 2015]
-temp_end = [10, 2015]
+temp_start = [4, 2015]
+temp_end = [4, 2015]
 step = 1
 #start and end months for spatial processing.  Each month is processed individually
 spat_start = [1, 2017]
