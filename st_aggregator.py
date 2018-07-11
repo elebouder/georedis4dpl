@@ -58,7 +58,7 @@ class STAggregator:
             self.setup(currentcode)
             detections = self.pull_csv(currentcode)
             self.detectiondict = self.build_ids(detections)
-            self.index_builder(currentcode, self.detectiondict)
+            #self.index_builder(currentcode, self.detectiondict)
             self.search()        
 
 
@@ -135,6 +135,8 @@ class STAggregator:
     def redis_up(self):
         self.r = redis.Redis(host='localhost', port=6379, db=0)
         self.pipe = self.r.pipeline()
+	self.r.flushall()
+
 
     #shuts down a redis instance
     def redis_down(self):
@@ -158,13 +160,13 @@ class STAggregator:
                 #update persistent
                 self.persistent.update_collection_found(phits)
                 continue
-            ahits = self.r.georadius(akey, lon, lat, 1000, unit='m')
+            ahits = self.r.georadius(akey, lon, lat, 100, unit='m')
             if len(ahits) > 0:
-		print ahits
                 self.appearant.update_collection_found(ahits)
                 continue
             if (len(phits) == 0) and (len(ahits) == 0):
                 self.appearant.queue_add_hash(ghash)
+		
 
 
 
@@ -220,7 +222,7 @@ class Persistent:
 
     def remove_hashes(self):
         for geohash in self.toremove:
-            self.detectiondict[:] = [d for d in self.detectiondict if d.get('geohash') == geohash]
+            self.detectiondict[:] = [d for d in self.detectiondict if d.get('geohash') != geohash]
 
     def latlon2hash(self, lat, lon):
         g = Geohash.encode(float(lat), float(lon), precision=11)
@@ -274,7 +276,6 @@ class Appearant:
     
     def __init__(self, code, csvserver, redisInstance, p):
 	pullcode = csvserver.get_earlier_code(code)
-	print 'pullA', pullcode
         self.detectiondict = csvserver.read_APcsv(pullcode, 'A')
 	self.csvserver = csvserver
         self.code = code
@@ -294,13 +295,11 @@ class Appearant:
 
 
     def init_redis_db(self):
-	print self.key
         for elem in self.detectiondict:
             lat, lon = self.hash2latlon(elem['geohash'])
-            self.pipe.geoadd(self.key, lom, lat, elem['geohash'])
-	self.pipe.execute()
-        self.pipe.reset()
-	
+            self.r.geoadd(self.key, lon, lat, elem['geohash'])
+       	#self.pipe.execute()
+        #self.pipe.reset()
 
     def write_detections(self):
         self.csvserver.write_APcsv(self.code, 'A', self.detectiondict)
@@ -320,7 +319,7 @@ class Appearant:
 
     def remove_hashes(self):
         for geohash in self.to_remove:
-            self.detectiondict[:] = [d for d in self.detectiondict if d.get('geohash') == geohash]
+            self.detectiondict[:] = [d for d in self.detectiondict if d.get('geohash') != geohash]
 
     def latlon2hash(self, lat, lon):
         g = Geohash.encode(float(lat), float(lon), precision=11)
